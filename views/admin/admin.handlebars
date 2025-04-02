@@ -1,0 +1,217 @@
+<div class="admin-dashboard">
+  <div class="admin-header">
+    <h1><i class="fas fa-user-shield"></i> &nbsp;Admin Dashboard</h1>
+    <p class="admin-subtitle">Manage complaints and assignments</p>
+  </div>
+
+  <div class="admin-content">
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon pending">
+          <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{stats.pending}}</h3>
+          <p>Pending Complaints</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon in-progress">
+          <i class="fas fa-tools"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{stats.inProgress}}</h3>
+          <p>In Progress</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon resolved">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{stats.resolved}}</h3>
+          <p>Resolved</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon engineers">
+          <i class="fas fa-users-cog"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{stats.engineers}}</h3>
+          <p>Active Engineers</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Complaints Table -->
+    <div class="admin-card">
+      <div class="card-header">
+        <h2><i class="fas fa-list"></i> All Complaints</h2>
+        <div class="table-controls">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="complaintSearch" placeholder="Search all complaints..." oninput="filterComplaints()">
+          </div>
+          <div class="filter-group">
+            <select id="statusFilter" class="filter-select" onchange="filterComplaints()">
+              <option value="">All Statuses</option>
+              <option value="Submitted">Submitted</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+            <div class="filter-dropdown-arrow">
+              <i class="fas fa-chevron-down"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Customer</th>
+              <th>Contact</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Assigned To</th>
+              <th>Assign</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each complaints}}
+              <tr>
+                <td class="complaint-id">#{{_id}}</td>
+                <td>{{name}}</td>
+                <td>
+                  <a href="tel:{{contact}}" class="contact-link">
+                    <i class="fas fa-phone-alt"></i> {{contact}}
+                  </a>
+                </td>
+                <td class="truncate">{{truncate desc 40}}</td>
+                <td>
+                  <span class="status-badge {{toLowerCase status}}">
+                    {{status}}
+                  </span>
+                </td>
+                <td>
+                  {{#if assignedTo}}
+                    {{assignedTo}}
+                  {{else}}
+                    <span class="text-muted">Unassigned</span>
+                  {{/if}}
+                </td>
+                <td class="actions">
+                  {{#unless assignedTo}}
+                    <button class="action-btn assign" data-id="{{_id}}" title="Assign to Engineer">
+                      <i class="fas fa-user-tag"></i>
+                    </button>
+                  {{else}}
+                    <span class="assigned-badge">
+                      <i class="fas fa-check-circle"></i> Assigned
+                    </span>
+                  {{/unless}}
+                </td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Assignment Modal (Hidden by default) -->
+    <div id="assignModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Assign Complaint</h2>
+        <form id="assignmentForm">
+          <input type="hidden" id="complaintId">
+          <div class="form-group">
+            <label>Select Engineer</label>
+            <select id="engineerSelect" class="form-control" required>
+              {{#each jeng}}
+                <option value="{{username}}">{{name}} ({{username}})</option>
+              {{/each}}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Assign Complaint
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Only keep assignment functionality
+  const modal = document.getElementById('assignModal');
+  const assignButtons = document.querySelectorAll('.action-btn.assign');
+  const closeBtn = document.querySelector('.close');
+  
+  assignButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.getElementById('complaintId').value = this.getAttribute('data-id');
+      modal.style.display = 'block';
+    });
+  });
+
+  closeBtn.addEventListener('click', () => modal.style.display = 'none');
+  window.addEventListener('click', (e) => e.target === modal && (modal.style.display = 'none'));
+
+  document.getElementById('assignmentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = {
+      complaintID: this.complaintId.value,
+      engineerName: this.engineerSelect.value
+    };
+
+    fetch('/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => data.success ? location.reload() : alert('Error: ' + data.message))
+    .catch(() => alert('Assignment failed'));
+  });
+});
+
+function filterComplaints() {
+  const searchTerm = document.getElementById('complaintSearch').value.toLowerCase();
+  const statusFilter = document.getElementById('statusFilter').value;
+  const rows = document.querySelectorAll('.admin-table tbody tr');
+
+  rows.forEach(row => {
+    const rowText = Array.from(row.querySelectorAll('td:not(.actions)'))
+      .map(td => td.textContent.toLowerCase())
+      .join(' ');
+
+    // Get the exact status text from the badge
+    const statusBadge = row.querySelector('.status-badge');
+    const status = statusBadge ? statusBadge.textContent.trim() : '';
+    
+    console.log("Checking row with status:", status); // Debugging
+    
+    const matchesSearch = searchTerm === '' || rowText.includes(searchTerm);
+    const matchesStatus = statusFilter === '' || status === statusFilter;
+
+    row.style.display = matchesSearch && matchesStatus ? '' : 'none';
+  });
+}
+
+// Initialize filters on page load
+document.addEventListener('DOMContentLoaded', function() {
+  filterComplaints();
+  
+  // Close dropdown when clicking elsewhere
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.filter-group')) {
+      document.getElementById('statusFilter').blur();
+    }
+  });
+});
+</script>

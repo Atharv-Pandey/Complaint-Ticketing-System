@@ -1,0 +1,80 @@
+<div class="complaint-details">
+  <div class="card mb-4">
+    <div class="card-header">
+      <h2>Complaint #{{complaint._id}}</h2>
+    </div>
+    <div class="card-body">
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <div class="detail-group">
+            <h5 class="detail-label">Current Status</h5>
+            <span class="badge status-{{toLowerCase complaint.status}}">
+              {{complaint.status}}
+            </span>
+          </div>
+          
+          <div class="detail-group">
+            <h5 class="detail-label">Submitted On</h5>
+            <p class="detail-value">{{formatDate complaint.createdAt}}</p>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="detail-group">
+            <h5 class="detail-label">Contact Information</h5>
+            <p class="detail-value">
+              <i class="fas fa-phone-alt mr-2"></i> {{complaint.contact}}
+            </p>
+          </div>
+          
+          <div class="detail-group">
+            <h5 class="detail-label">Email</h5>
+            <p class="detail-value">
+              <i class="fas fa-envelope mr-2"></i> {{complaint.email}}
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="detail-group">
+        <h5 class="detail-label">Description</h5>
+        <p class="detail-value">{{complaint.desc}}</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-4">Status History</h3>
+  
+  {{#if complaint.updates.length}}
+    <div class="status-timeline">
+      {{#each complaint.updates}}
+        <div class="timeline-item timeline-status-{{toLowerCase status}}">
+          <div class="timeline-badge"></div>
+          <div class="timeline-panel">
+            <div class="timeline-heading">
+              <span class="timeline-status">{{status}}</span>
+              <span class="timeline-time">{{formatDate timestamp}}</span>
+            </div>
+            {{#if comment}}
+              <div class="timeline-body">
+                <p>{{comment}}</p>
+              </div>
+            {{/if}}
+            <div class="timeline-user">
+              <i class="fas fa-user-circle timeline-user-icon"></i>
+              {{changedBy.name}} ({{changedBy.role}})
+            </div>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <div class="alert alert-info">
+      No status updates available
+    </div>
+  {{/if}}
+  
+  <a href="/my-complaints" class="btn btn-outline mt-4">
+    <i class="fas fa-arrow-left mr-2"></i> Back to My Complaints
+  </a>
+</div>
